@@ -2,6 +2,9 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <map>
+#include <set>
+#include <iomanip>
 
 #include "disjoint.h"
 
@@ -17,7 +20,7 @@ class Superball {
     vector <int> board;
     vector <int> goals;
     vector <int> colors;
-    DisjointSetByRankWPC(80);
+    DisjointSetByRankWPC* dset;
 };
 
 void usage(const char *s) 
@@ -86,6 +89,40 @@ int main(int argc, char **argv)
 
   DisjointSetByRankWPC ds(s->r*s->c);
 
-  ds.Print();
-  
+  for(int i = 0; i < s->r; i++) {
+    for(int j = 0; j < s->c; j++) {
+      // element (i, j) = board(i*c + j)
+      // if same color union (need to perform find on each set to unioh the heads)
+      if(s->board[i*s->c + j] == s->board[i*s->c + j + 1] && j != s->c - 1) { // value to the right of the cell
+        ds.Union(ds.Find(i*s->c + j), ds.Find(i*s->c + j + 1)); // accessing element instead of set
+      }
+      if(s->board[i*s->c + j] == s->board[(i+1) * s->c + j] && i!= s->r-1) { // value under the cell
+        ds.Union(ds.Find(i * s->c + j), ds.Find((i+1) * s->c + j));
+      }
+      // after this run through each one and see if there is a goal cell, if there is we can say we can score it.
+    }
+  }
+  // Find size via looping through again
+  map<int, int> count;
+  for(int i = 0; i < s->r * s->c; i++) {
+    int cell = ds.Find(i); // do i need board here
+    //cout << cell << endl;
+    if(count.find(cell) == count.end()) {
+      count[cell] = 0;
+    }
+    count[cell] += 1;
+    //cout << "in count" << endl;
+  }
+  //cout << count.size();
+  set<int> outputted;
+  cout << "Scoring sets:" << endl;
+  for(int i = 0; i < s->r; i++) {
+    for(int j = 0; j < s->c; j++) {
+      if((s->goals[i*s->c + j] == 1) && (s->board[i*s->c + j] != '*') && (count[ds.Find(i * s->c + j)] >= s->mss) && (outputted.find(ds.Find(i*s->c + j)) == outputted.end())) { // this never evaluates to true
+        outputted.insert(ds.Find(i * s->c + j));
+        cout << "  Size: " << setw(2) << count[ds.Find(i * s->c + j)] << "  Char: " << (char)(s->board[i * s->c + j]) << "  Scoring Cell: " << i << "," << j << endl;
+      }
+    }
+  }
+  //ds.Print();
 }
